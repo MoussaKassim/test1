@@ -1,0 +1,49 @@
+---
+title: "Introduction to KODAMA"
+author: "Stefano Cacciatore"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+# Introduction
+KODAMA An unsupervised and semi-supervised learning algorithm to perform feature extraction from noisy and high-dimensional data 
+
+# News
+KODAMA facilitates identification of patterns representing underlying groups on all samples in a data set. This is an improved version of KODAMA algorithm for spatially-aware dimensionality reduction. A landmarks procedure has been implemented to adapt the algorithm to the analysis of data set with more than 10,000 entries.
+
+The KODAMA package has been integrated with t-SNE and UMAP to convert the KODAMA's dissimilarity matrix in a low dimensional space.
+
+Abdel-Shafy, E., Melak, T., Vignoli, A., Piazza, S., Zerbini, L. F., ... & Cacciatore, S.
+(2022). KODAMA exploratory analysis in metabolic phenotyping. Frontiers in Molecular Biosciences,
+9. (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9887019/)
+
+Cacciatore, S., Tenori, L., Luchinat, C., Bennett, P. R., & MacIntyre, D.
+A. (2017). KODAMA: an R package for knowledge discovery and data mining. Bioinformatics,
+33(4), 621-623.(https://academic.oup.com/bioinformatics/article/33/4/621/2667156)
+
+Cacciatore,
+S., Luchinat, C., & Tenori, L. (2014). Knowledge discovery by accuracy maximization. Proceedings
+of the National Academy of Sciences, 111(14), 5117-5122.(https://www.pnas.org/doi/abs/10.1073/pnas.1220873111)
+
+## Installation
+
+```{r error=FALSE,message=FALSE}
+library(devtools)
+install_github("tkcaccia/KODAMA")
+```
+
+## Applications
+
+Metabolomic data
+Explore Metabolomic data
+
+Single cell RNA seq data
+Explore Single cell RNA seq data
+
+Spatial Transcriptomic data
+Explore Spatial Transcriptomic data
