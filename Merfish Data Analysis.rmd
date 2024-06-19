@@ -1,0 +1,136 @@
+---
+title: "About"
+output:
+  workflowr::wflow_html:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+Describe your project.
+---# Merfish Data Analysis
+
+Discover an advanced approach to analyzing Merfish data, a revolutionary molecular imaging technique that maps RNA in cells with unparalleled spatial precision.
+
+## Loading and Cleaning Data
+
+Using specialized libraries to load and clean Merfish data, removing irrelevant information.
+
+```{r}
+# Load necessary libraries
+library(Seurat)
+library(KODAMAextra)
+library(ggplot2)
+library(NMI)
+library(mclust)
+library(bluster)
+library(igraph)
+
+# Set working directory
+setwd("~/Merfish giotto/Data/merfish")
+
+# Load data
+data <- read.csv("C:/Users/T0087231/Videos/EBTESSAM/Moffitt_and_Bambah-Mukku_et_al_merfish_all_cells.csv")
+data <- as.data.frame(data)
+
+# Data cleaning
+colnames_data <- colnames(data)
+blankgenes <- grep("Blank", colnames_data)
+fos_index <- which(colnames(data) == "Fos")
+df <- data[, -c(fos_index, blankgenes)]
+selected_bregma <- unique(df$Bregma)
+
+# Filter data for Animal_ID 1 and specific Bregma values
+exp <- subset(df, Animal_ID == 1 & Bregma %in% selected_bregma)
+rownames(exp) <- exp$Cell_ID
+data_list <- split(exp, exp$Bregma)
+data_list <- data_list[match(selected_bregma, names(data_list))]
+```
+
+## Normalization and Dimensionality Reduction
+
+Normalization and dimensionality reduction using Principal Component Analysis (PCA) for efficient visualization.
+
+```{r}
+# Normalization and dimensionality reduction by PCA
+xy <- list()
+cons <- list()
+for (i in selected_bregma) {
+  x <- data_list[[i]]$Centroid_X - min(data_list[[i]]$Centroid_X)
+  y <- data_list[[i]]$Centroid_Y - min(data_list[[i]]$Centroid_Y)
+  xy[[i]] <- cbind(x, y)
+  rownames(xy[[i]]) <- rownames(data_list[[i]])
+  
+  cons[[i]] <- t(data_list[[i]][, 10:ncol(data_list[[i]])])
+  colnames(cons[[i]]) <- rownames(data_list[[i]])
+  
+  v <- t(LogNormalize(cons[[i]]))
+  pca <- prcomp(v, scale. = TRUE)$x[, 1:50]
+}
+```
+
+## KODAMA Clustering and Graph-based Clustering
+
+Grouping data into clusters using the KODAMA algorithm, followed by refinement with graph-based clustering for accurate classification.
+
+```{r}
+# KODAMA clustering
+vis <- list()
+pred <- list()
+refine <- list()
+ARI <- list()
+NMI <- list()
+for (i in selected_bregma) {
+  kk <- KODAMA.matrix.parallel(pca, spatial = xy[[i]], FUN = "PLS", landmarks = 10000, n.cores = 4)
+  vis[[i]] <- KODAMA.visualization(kk, method = "UMAP")
+  names(vis[[i]]) <- names(data_list[[i]])
+  
+  g <- bluster::makeSNNGraph(as.matrix(vis[[i]]), k = 100)
+  g_walk <- igraph::cluster_walktrap(g)
+  pred[[i]] <- as.character(igraph::cut_at(g_walk, no = 20))
+  refine[[i]] <- refinecluster(pred[[i]], xy[[i]], shape = "hexagon")
+  pred[[i]] <- as.character(igraph::cut_at(g_walk, no = 8))
+  refine[[i]] <- refinecluster(pred[[i]], xy[[i]], shape = "hexagon")
+  
+  # Calculate ARI and NMI
+  ARI[[i]] <- adjustedRandIndex(zlabels, refine[[i]])
+  NMI[[i]] <- NMI(zlabels, refine[[i]])
+}
+```
+
+## Cluster Visualization
+
+Visualizing clusters with UMAP, a dimensionality reduction method for better data understanding.
+
+```{r}
+# Visualize clusters
+plotClustersFacet(xy, pred, selected_bregma, size = 0.2) +
+  scale_color_manual("Domain", values = cols) +
+  guides(color = guide_legend(nrow = 1, override.aes = list(size = 2)))
+
+plotClustersFacet(xy, refine, selected_bregma, size = 1) +
+  scale_color_manual("Domain", values = cols) +
+  guides(color = guide_legend(nrow = 1, override.aes = list(size = 2)))
+```
+
+## Cell Types
+
+Identifying and visualizing different cell types for in-depth analysis.
+
+```{r}
+# Cell types visualization
+plotClustersFacet(xy, clabels, selected_bregma, size = 0.2) +
+  scale_color_manual("Type", values = cols) +
+  guides(color = guide_legend(byrow = T, nrow = 2, override.aes = list(size = 2)))
+
+plotCellTypes(xy[[3]], pred[[3]], cols, ncol = 5, dotsize = 0.5,
+      size = 0.6, alpha = 0.5, stroke = 0) +
+  ggtitle(names(data_list)[3])
+
+plotCellTypes(xy[[3]], refine[[3]], cols, ncol = 5, dotsize = 0.5,
+              size = 0.6, alpha = 0.5, stroke = 0) +
+  ggtitle(names(data_list)[3])
+```
+
+This script illustrates a standard approach to Merfish data analysis, showcasing the use of commonly used bioinformatics tools. It provides a comprehensive overview of the Merfish data analysis and visualization process, crucial for understanding the spatial distribution of RNA in cells.
+```
